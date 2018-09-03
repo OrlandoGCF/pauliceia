@@ -70,7 +70,40 @@
                 <input type="file" @change="handleFileChange"/>
             </label><br><br>
 
-            <button class="btn btn-download" @click="download()">Download</button>                
+            <form class="headers-form" v-show="headers.length > 0" @submit.prevent="visualizar()">
+                <div class="inputs">
+                    <el-select v-model="street" placeholder="Coluna RUA">
+                        <el-option
+                            v-for="item in headers"
+                            :key="item"
+                            :label="item"
+                            :value="item"
+                            :required="true">
+                        </el-option>
+                    </el-select>
+                    <el-select v-model="number" placeholder="Coluna Número">
+                        <el-option
+                            v-for="item in headers"
+                            :key="item"
+                            :label="item"
+                            :value="item"
+                            :required="true">
+                        </el-option>
+                    </el-select>
+                    <el-select v-model="year" placeholder="Coluna ANO">
+                        <el-option
+                            v-for="item in headers"
+                            :key="item"
+                            :label="item"
+                            :value="item"
+                            :required="true">
+                        </el-option>
+                    </el-select>
+                </div>
+                <button class="btn btn-download" type="submit">Visualizar</button> 
+                <button class="btn btn-download" type="button" @click="download()">Download</button>
+            </form>                           
+                            
         </div>    
         
     </section>    
@@ -107,7 +140,11 @@ export default {
             multigeocoding: false,
             placesList: [],
             geojson: '',
-            loading: null
+            loading: null,
+            headers: [],
+            street: '',
+            number: '',
+            year: '',
         }
     },
     
@@ -146,34 +183,41 @@ export default {
                 let text = reader.result;
                 let node = document.getElementById('output');
                 let csv = text;
-                let json = CSV2JSON(csv);
-
-                try {
-                    let response = await ApiMap.geolocationMultiple(encodeURIComponent(json));
-                    vm.geojson = response.data
-                    
-                    let vectorLayer = new ol.layer.Vector({
-                        title: "multipligeolocation",
-                        source: new ol.source.Vector({
-                            features: (new ol.format.GeoJSON()).readFeatures(vm.geojson)
-                        }),
-                        name: 'placesSearchMultiple',
-                        style: placeStyleSearch,
-                        zIndex: 999
-                    });
-                    overlayGroupGeolocation.getLayers().clear()
-                    overlayGroupGeolocation.getLayers().push(vectorLayer)
-                    this.loading.close()
-
-                } catch( error ){
-                    this.$alert('Não foi possível ler o arquivo CSV', 'Erro no arquivo', {
-                        confirmButtonText: 'OK',
-                        type: 'error'
-                    });
-                    this.loading.close()
-                }
+                this.headers = csv.split('\n')[0].split(',').map( header => header.substr(header.indexOf('"')+1, header.lastIndexOf('"')-1).replace('"', '') )
+                this.geojson = CSV2JSON(csv);
+                this.loading.close();
             }
             reader.readAsText(e.target.files[0]);
+        },
+        async visualizar() {
+            try {
+                console.log(this.street)
+                console.log(this.number)
+                console.log(this.year)
+
+                // let response = await ApiMap.geolocationMultiple(encodeURIComponent(this.geojson));
+                // this.geojson = response.data
+                
+                // let vectorLayer = new ol.layer.Vector({
+                //     title: "multipligeolocation",
+                //     source: new ol.source.Vector({
+                //         features: (new ol.format.GeoJSON()).readFeatures(vm.geojson)
+                //     }),
+                //     name: 'placesSearchMultiple',
+                //     style: placeStyleSearch,
+                //     zIndex: 999
+                // });
+                // overlayGroupGeolocation.getLayers().clear()
+                // overlayGroupGeolocation.getLayers().push(vectorLayer)
+                this.loading.close()
+
+            } catch( error ){
+                this.$alert('Não foi possível ler o arquivo CSV', 'Erro no arquivo', {
+                    confirmButtonText: 'OK',
+                    type: 'error'
+                });
+                this.loading.close()
+            }
         },
         download(){
 
@@ -354,6 +398,10 @@ export default {
             .btn
             .btn:hover
 
+            .headers-form
+                .inputs
+                    display: flex
+                    margin-bottom: 20px
 
     input:focus
         border-color: rgba(#58595b, 0.2) !important
